@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+<!-- for JavaScript overlay popup -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<!-- for copyright -->
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<meta name="created" content="2026-07-23T18:10:00.000000000"/>
+<meta name="changedby" content="Eric Marceau"/>
+<meta name="changed" content="2026-07-23T18:10:00.000000000"/>
+
+<title>
+IPTABLES Guidance – Packet Destination Flow – Forwarding
+</title>
+
+
+<!-- for copyright -->
+<!--
+ SPDX-License-Identifier: GPLv3-or-later
+ SPDX-FileCopyrightText: © 2026 Eric Marceau <ericmarceau@rogers.com>
+
+ For the full text of the GNU General Public License version 3.0 (a.k.a. GPLv3)
+ please visit:	https://spdx.org/licenses/GPL-3.0-or-later.html
+-->
+
+
+<!-- for copyright -->
+<link rel="license" href="https://spdx.org/licenses/GPL-3.0-or-later.html">
+
+
+<!-- ####################################################################### -->
+
+
+<!-- for copyright -->
+<script type="application/ld+json">
+{
+	"@context":		"https://schema.org",
+	"@type":		"WebPage",
+	"license":		"https://spdx.org/licenses/GPL-3.0-or-later.html",
+	"copyrightYear":	"2026",
+	"copyrightHolder": {
+		"@type":	"Person",
+		"name":		"Eric Marceau",
+		"email":	"ericmarceau@rogers.com"
+	}
+}
+</script>
+
+
+<!-- ####################################################################### -->
+
+
+<!-- ####################################################################### -->
+
+	<!-- Style section for indexing grid offering choices of iptables targets
+		which, when clicked upon the cell, will trigger the pop-up window
+		presenting the guidance documentation specifically related to
+		that target for packets that have reached a given table state
+		within the governing chain 
+	-->
+
+<style>
+
+body {
+	text-align:				center ;
+	align-items:				center ;
+}
+
+footer {
+	text-align:				left ;
+	/* */
+	padding-top:				15px ;
+	padding-right:				5px ;
+	padding-bottom:				5px ;
+	padding-left:				30px ;
+	/* */
+	font-family:				sans-serif ;
+	font-size:				1em ;
+	font-weight:				normal ;
+	font-style:				italic ;
+}
+
+/******************************************************************************/
+.PageLayout {
+	position:				relative ;
+	width:					1250px ;
+	padding:				10px ;
+	display:				grid ;
+	grid-template-columns:			1fr 1210px 1fr ;
+}
+
+.GuidanceBanner {
+	grid-column:				1 / -1 ;
+	display:				block ;
+	/* */
+	padding:				20px ;
+	font-family:				sans-serif ;
+	font-size:				2em ;
+	font-weight:				bold ;
+	text-align:				center ;
+	/* */
+	background-color:			#1f1f1f ;
+	color:					#bfbf8f ;
+}
+
+.FlowDescription {	
+	display:				block ;
+	position:				relative ;
+	/* */
+	padding-top:				15px ;
+	padding-bottom:				15px ;
+}
+
+.Forwarding {	
+	grid-column:				2 ;
+	position:				relative ;
+	/* */
+	display:				flex ;
+	flex-direction:				columns ;
+	width:					1210px ;
+}
+
+/* Individual Table Containers */
+
+.dTblPreRouting, .dTblForward, .dTblPostRouting, .dTblDivider {
+	display:				flex ;
+	flex-direction:				column ;
+	font-family:				sans-serif ;
+}
+
+.dTblPreRouting {
+	width:					450px ;
+	border:					1px solid #000 ;
+}
+
+.dTblForward {
+	width:					450px ;
+	border:					1px solid #000 ;
+}
+
+.dTblPostRouting {
+	width:					300px ;
+	border:					1px solid #000 ;
+}
+
+.dTblDivider {
+	width:					10px ;
+	border-top:				1px solid #000 ;
+	border-bottom:				1px solid #000 ;
+	background-color:			#000000 ;
+}
+
+/******************************************************************************/
+
+/* Table Top Row: Full-width Banner */
+
+.dTblBanner {
+	background-color:			#d0e0e0 ;
+	padding:				10px ;
+	text-align:				center ;
+	font-size:				1.2em ;
+	font-weight:				bold ;
+}
+
+/******************************************************************************/
+
+/* Table Second: Column Headers Container */
+
+.dTblRowPreRouting, .dTblRowForward, .dTblRowPostRouting, .dTblRowDivider {
+	display:				flex ;
+	border-bottom:				2px solid #bdc3c7 ;
+	font-weight:				bold ;
+	background-color:			#304050 ;
+	color:					white ;
+}
+
+.dTblRowDivider {
+	background-color:			#ecf0f1 ;
+	color:					#ecf0f1 ;
+}
+
+/******************************************************************************/
+
+/* Table Data Rows: Data Rows Container */
+.dTblRow {
+	display:				flex ;
+	border-bottom:				1px solid #888 ;
+}
+
+/* Individual Cells (Headers and Data) */
+/* Container for clickable items => class iptTarget */
+.dTblHdrCell, .dTblDatCell {
+	flex:					1 ;	/* specify equal widths */
+	padding:				3px ;
+	text-align:				center ;
+	border-right:				1px solid #888 ;
+	/* */
+	cursor:					pointer ;
+	height:					19px ;
+}
+
+/* Remove right border on the last column */
+.dTblHdrCell:last-child, .dTblDatCell:last-child {
+	border-right:				none ;
+}
+
+.noAvail {
+	background-color:			#AFAFAF ;
+	color:					#AFAFAF ;
+}
+
+
+<!-- ####################################################################### -->
+
+<!-- Colouring styles to help with visual grouping of similar targets -->
+
+.watch { background-color:			#FFFFCF ; }
+.task {	background-color:			#CFCFFF ; }
+.std {	background-color:			#CFFFCF ; }
+.sec {	background-color:			#FFCFCF ; }
+
+
+</style>
+
+
+<!-- ####################################################################### -->
+
+	<!-- Style section for control of pop-up window intended to present
+		guidance documentation about the various iptables targets for
+		packets that have reached a given table state within a chain 
+	-->
+
+<style>
+
+/* Hidden popup background overlay */
+.popup-overlay {
+	display:				none ; 
+	position:				fixed ;
+	top:					0 ;
+	left:					0 ;
+	width:					100% ;
+	height:					100% ;
+	background-color:			rgba(0, 0, 0, 0.05) ;
+	justify-content:			center ;
+	/* */
+	align-items:				center ;
+	z-index:				1000 ;
+}
+
+/* Popup content box */
+.popup-content {
+	height:					50% ;
+	position:				relative ;
+
+    	/* size and profile */
+	width:					95% ;
+	max-width:				calc(100vw - 20px) ;
+	padding-top:				5px ;
+	padding-right:				20px ;
+	padding-bottom:				20px ;
+	padding-left:				20px ;
+	border-radius:				10px ;
+
+	/* position */
+	position:				absolute ;
+	transform:				translate(-50%,-50%) ;
+	left:					50% ;
+	top:					80% ;
+}
+
+/* Iframe to display the external HTML file */
+.popup-iframe {
+	width:					100% ;
+	height:					calc(100% - 40px) ;
+	border:					none ;
+}
+
+.close-btn {
+	padding:				0 ;
+	/* */
+	position:				absolute ;
+	top:					-15px ;
+	right:					20px ;
+	font-size:				24px ;
+	cursor:					pointer ;
+	/* */
+	width:					40px ;
+	height:					20px ;
+	border-radius:				20px 20px 0 0;
+	border:					none ;
+	background-color:			#2F2F2F ;
+	color:					white ;
+}
+</style>
+
+
+<!-- ####################################################################### -->
+
+
+	<!--	FUTURES:  Contents of the pre-load JavaScript file could be
+		incorporated here as embedded instead of external referencing
+	<script	type="text/javascript"
+		src="Forwarding__PopupTargetInformation_preLoad.js"
+		defer >
+	</script>
+	-->
+
+
+	<!--	FUTURES:  Contents of the CSS file could be incorporated
+		here as embedded here instead of external referencing
+	<link	rel="stylesheet"
+		href="Forwarding__PopupTargetInformation.css" >
+	-->
+
+</head>
+<body>
+
+
+<!-- ####################################################################### -->
+
+
+<div class="PageLayout">
+
+<div class="GuidanceBanner">
+	IPTABLES Guidance – Packet Destination Flow
+</div>
+
+<p class="FlowDescription">
+	<h3 class="FlowDescription"> Packet Destination: Pass Thru to Peer Host </h3
+</p>
+
+<div class="Forwarding">
+
+	<div class="dTblPreRouting">
+		<!-- Table Top Row: Table Banner -->
+		<div class="dTblBanner">
+			Chain: PREROUTING
+		</div>
+		<!-- Table Second Row: Sub-Column Headers -->
+		<div class="dTblRowPreRouting">
+			<div id="PRE_raw" class="dTblHdrCell iptTarget">raw</div>
+			<div id="PRE_mangle" class="dTblHdrCell iptTarget">mangle</div>
+			<div id="PRE_nat" class="dTblHdrCell iptTarget">nat</div>
+		</div>
+		<!-- Start of Data Rows -->
+		<div class="dTblRow">
+			<div id="PRE_raw_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+			<div id="PRE_mng_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+			<div id="PRE_nat_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t2" class="dTblDatCell iptTarget std">RETURN</div>
+			<div id="PRE_mng_t2" class="dTblDatCell iptTarget std">RETURN</div>
+			<div id="PRE_nat_t2" class="dTblDatCell iptTarget std">RETURN</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t3" class="dTblDatCell iptTarget std">DROP</div>
+			<div id="PRE_mng_t3" class="dTblDatCell iptTarget std">DROP</div>
+			<div id="PRE_nat_t3" class="dTblDatCell iptTarget std">DROP</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t4" class="dTblDatCell iptTarget std">Custom</div>
+			<div id="PRE_mng_t4" class="dTblDatCell iptTarget std">Custom</div>
+			<div id="PRE_nat_t4" class="dTblDatCell iptTarget std">Custom</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t5" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t5" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t5" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t6" class="dTblDatCell iptTarget task">QUEUE</div>
+			<div id="PRE_mng_t6" class="dTblDatCell iptTarget task">MARK</div>
+			<div id="PRE_nat_t6" class="dTblDatCell iptTarget task">REDIRECT</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t7" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t7" class="dTblDatCell iptTarget task">TTL</div>
+			<div id="PRE_nat_t7" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t8" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t8" class="dTblDatCell iptTarget task">TOS</div>
+			<div id="PRE_nat_t8" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t9" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t9" class="dTblDatCell iptTarget task">DSCP</div>
+			<div id="PRE_nat_t9" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t10" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t10" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t10" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t11" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t11" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t11" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t12" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t12" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t12" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t13" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t13" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t13" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t14" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t14" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t14" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t15" class="dTblDatCell iptTarget watch">NOTRACK</div>
+			<div id="PRE_mng_t15" class="dTblDatCell iptTarget watch">ROUTING</div>
+			<div id="PRE_nat_t15" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t16" class="dTblDatCell iptTarget watch">TRACE</div>
+			<div id="PRE_mng_t16" class="dTblDatCell iptTarget watch">CONNMARK</div>
+			<div id="PRE_nat_t16" class="dTblDatCell iptTarget watch">DNAT</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t17" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t17" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t17" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t18" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t18" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t18" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t19" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t19" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t19" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PRE_raw_t20" class="dTblDatCell noAvail"></div>
+			<div id="PRE_mng_t20" class="dTblDatCell noAvail"></div>
+			<div id="PRE_nat_t20" class="dTblDatCell noAvail"></div>
+		</div>
+	</div>
+
+<!-- ####################################################################### -->
+
+	<div class="dTblDivider">
+	</div>
+
+<!-- ####################################################################### -->
+
+
+	<div class="dTblForward">
+		<!-- Table Top Row: Table Banner -->
+		<div class="dTblBanner">
+			Chain: FORWARD
+		</div>
+		<!-- Table Second Row: Sub-Column Headers -->
+		<div class="dTblRowForward">
+			<div id="FWD_mangle" class="dTblHdrCell iptTarget">mangle</div>
+			<div id="FWD_filter" class="dTblHdrCell iptTarget">filter</div>
+			<div id="FWD_security" class="dTblHdrCell iptTarget">security</div>
+		</div>
+		<!-- Data Row 1 -->
+		<div class="dTblRow">
+			<div id="FWD_mng_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+			<div id="FWD_flt_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+			<div id="FWD_sec_t1" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t2" class="dTblDatCell iptTarget std">RETURN</div>
+			<div id="FWD_flt_t2" class="dTblDatCell iptTarget std">RETURN</div>
+			<div id="FWD_sec_t2" class="dTblDatCell iptTarget std">RETURN</div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t3" class="dTblDatCell iptTarget std">DROP</div>
+			<div id="FWD_flt_t3" class="dTblDatCell iptTarget std">DROP</div>
+			<div id="FWD_sec_t3" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t4" class="dTblDatCell iptTarget std">Custom</div>
+			<div id="FWD_flt_t4" class="dTblDatCell iptTarget std">Custom</div>
+			<div id="FWD_sec_t4" class="dTblDatCell iptTarget std">Custom</div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t5" class="dTblDatCell noAvail"></div>
+			<div id="FWD_flt_t5" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t5" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t6" class="dTblDatCell iptTarget task">MARK</div>
+			<div id="FWD_flt_t6" class="dTblDatCell iptTarget task">NFQUEUE</div>
+			<div id="FWD_sec_t6" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t7" class="dTblDatCell iptTarget task">TTL</div>
+			<div id="FWD_flt_t7" class="dTblDatCell iptTarget task">REJECT</div>
+			<div id="FWD_sec_t7" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t8" class="dTblDatCell iptTarget task">TOS</div>
+			<div id="FWD_flt_t8" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t8" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t9" class="dTblDatCell iptTarget task">DSCP</div>
+			<div id="FWD_flt_t9" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t9" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t10" class="dTblDatCell iptTarget task">QUEUE</div>
+			<div id="FWD_flt_t10" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t10" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t11" class="dTblDatCell iptTarget task">TCPMSS</div>
+			<div id="FWD_flt_t11" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t11" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t12" class="dTblDatCell iptTarget task">ECN</div>
+			<div id="FWD_flt_t12" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t12" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t13" class="dTblDatCell noAvail"></div>
+			<div id="FWD_flt_t13" class="dTblDatCell iptTarget watch">LOG</div>
+			<div id="FWD_sec_t13" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t14" class="dTblDatCell noAvail"></div>
+			<div id="FWD_flt_t14" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t14" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t15" class="dTblDatCell noAvail"></div>
+			<div id="FWD_flt_t15" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t15" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t16" class="dTblDatCell iptTarget watch">CONNMARK</div>
+			<div id="FWD_flt_t16" class="dTblDatCell iptTarget watch">TRACE</div>
+			<div id="FWD_sec_t16" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t17" class="dTblDatCell noAvail"></div>
+			<div id="FWD_flt_t17" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t17" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t18" class="dTblDatCell iptTarget sec">CHECKSUM</div>
+			<div id="FWD_flt_t18" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t18" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t19" class="dTblDatCell iptTarget sec">SECMARK</div>
+			<div id="FWD_flt_t19" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t19" class="dTblDatCell iptTarget sec">SECMARK</div>
+		</div>
+		<div class="dTblRow">
+			<div id="FWD_mng_t20" class="dTblDatCell iptTarget sec">CONNSECMARK</div>
+			<div id="FWD_flt_t20" class="dTblDatCell noAvail"></div>
+			<div id="FWD_sec_t20" class="dTblDatCell iptTarget sec">CONNSECMARK</div>
+		</div>
+	</div>
+
+<!-- ####################################################################### -->
+
+	<div class="dTblDivider">
+	</div>
+
+<!-- ####################################################################### -->
+
+	<div class="dTblPostRouting">
+		<!-- Table Top Row: Table Banner -->
+		<div class="dTblBanner">
+			Chain: POSTROUTING
+		</div>
+		<!-- Table Second Row: Sub-Column Headers -->
+		<div class="dTblRowPostRouting">
+			<div id="PST_mangle" class="dTblHdrCell iptTarget">mangle</div>
+			<div id="PST_nat" class="dTblHdrCell iptTarget">nat</div>
+		</div>
+		<!-- Data Row 1 -->
+		<div class="dTblRow">
+			<div id="PST_mng_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+			<div id="PST_nat_t1" class="dTblDatCell iptTarget std">ACCEPT</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t2" class="dTblDatCell iptTarget std">RETURN</div>
+			<div id="PST_nat_t2" class="dTblDatCell iptTarget std">RETURN</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t3" class="dTblDatCell iptTarget std">DROP</div>
+			<div id="PST_nat_t3" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t4" class="dTblDatCell iptTarget std">Custom</div>
+			<div id="PST_nat_t4" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t5" class="dTblDatCell noAvail"></div>
+			<div id="PST_nat_t5" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t6" class="dTblDatCell iptTarget task">MARK</div>
+			<div id="PST_nat_t6" class="dTblDatCell iptTarget task">SNAT</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t7" class="dTblDatCell iptTarget task">TTL</div>
+			<div id="PST_nat_t7" class="dTblDatCell iptTarget task">MASQUERADE</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t8" class="dTblDatCell iptTarget task">TOS</div>
+			<div id="PST_nat_t8" class="dTblDatCell iptTarget task">NETMAP</div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t9" class="dTblDatCell iptTarget task">DSCP</div>
+			<div id="PST_nat_t9" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t10" class="dTblDatCell iptTarget task">CLASSIFY</div>
+			<div id="PST_nat_t10" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t11" class="dTblDatCell iptTarget task">SNTP</div>
+			<div id="PST_nat_t11" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t12" class="dTblDatCell noAvail"></div>
+			<div id="PST_nat_t12" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t13" class="dTblDatCell iptTarget watch">LOG</div>
+			<div id="PST_nat_t13" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t14" class="dTblDatCell iptTarget watch">ULOG</div>
+			<div id="PST_nat_t14" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t15" class="dTblDatCell iptTarget watch">NFLOG</div>
+			<div id="PST_nat_t15" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t16" class="dTblDatCell iptTarget watch">CONNMARK</div>
+			<div id="PST_nat_t16" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t17" class="dTblDatCell noAvail"></div>
+			<div id="PST_nat_t17" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t18" class="dTblDatCell iptTarget sec">CHECKSUM</div>
+			<div id="PST_nat_t18" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t19" class="dTblDatCell iptTarget sec">SECMARK</div>
+			<div id="PST_nat_t19" class="dTblDatCell noAvail"></div>
+		</div>
+		<div class="dTblRow">
+			<div id="PST_mng_t20" class="dTblDatCell iptTarget sec">CONNSECMARK</div>
+			<div id="PST_nat_t20" class="dTblDatCell noAvail"></div>
+		</div>
+	</div>
+
+<!-- ####################################################################### -->
+
+</div>
+
+</div>
+
+
+<!-- ####################################################################### -->
+
+    <!-- Popup Layer Overlay -->
+    <div id="popupLayer" class="popup-overlay">
+        <div class="popup-content">
+            <button class="close-btn" onclick="closePopup()">&times;</button>
+            <iframe id="popupFrame" class="popup-iframe" src=""></iframe>
+        </div>
+    </div>
+
+<!-- ####################################################################### -->
+
+	<!--	Contents of the post-load JavaScript file have been incorporated
+		here as embedded instead of external referencing
+	<script	type="text/javascript"
+		src="Forwarding__PopupTargetInformation_postLoad.js"
+		defer >
+	</script>
+	-->
+
+
+    <!-- On-Load JavaScript Logic - specific to documentation selection+display -->
+    <script>
+        // Consider all clickable iptTargets
+        const infoDoc = document.querySelectorAll('.iptTarget');
+        const popupLayer = document.getElementById('popupLayer');
+        const popupFrame = document.getElementById('popupFrame');
+
+        // Add click event listener to each iptTarget
+        infoDoc.forEach(iptTarget => {
+            iptTarget.addEventListener('click', function() {
+                // Get the ID of the clicked div
+                const baseName = iptTarget.id ; 
+                
+                // Build the file path (e.g., "about-us.html")
+                const targetPage = `${baseName}.html`; 
+                
+                // Set the iframe source to the target page
+		popupFrame.src = targetPage ; 
+                
+                // Change CSS display property from 'none' to 'flex' to show popup
+                popupLayer.style.display = 'flex'; 
+            });
+        });
+
+        // Function to hide the popup and clear iframe source
+        function closePopup() {
+            popupLayer.style.display = 'none';
+            popupFrame.src = ''; 
+        }
+
+        // Close popup if user clicks outside the content box
+        window.addEventListener('click', function(event) {
+            if (event.target === popupLayer) {
+                closePopup();
+            }
+        });
+    </script>
+
+
+<!-- ####################################################################### -->
+
+
+<footer>
+	<p>
+	Applicable Licensing: GPLv3 or later<br/>
+	<br/>
+	<b>© 2026 Eric Marceau <ericmarceau@rogers.com>, Ottawa, Canada.</b><br/>
+	<br/>
+	For the full text of the GNU General Public License version 3.0 (a.k.a. GPLv3)<br/>
+ 	please visit:	https://spdx.org/licenses/GPL-3.0-or-later.html
+	</p>
+</footer>
+
+
+</body>
+</html>
+
+
+
+
+
