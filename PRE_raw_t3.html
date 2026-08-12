@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Guidance for Selecting DROP as Target for PREROUTING Packets Evaluated at raw Stage</title>
+
+	<style>
+body {
+	background-color:			#2F2F2F ;
+	color:					light-blue ;
+	font-family:				"Liberation Sans", "Aileron", "Archivo", FreeSerif, serif ;
+}
+
+.popup_banner{
+	background-color:			#BFFFBF ;
+	color:					black ;
+	margin:					0px ;
+	padding:				10px ;
+	text-align:				left ;
+	font-size:				20px ;
+	font-style:				900 ;
+}
+
+.popup_guidance{
+	/* used for "guidance text displayed in popup window */
+	color:					#CFCFFF ;
+	margin:					30px 14px 0 14px ;
+	text-align:				justify ;
+	font-size:				18px ;
+	line-height:				26px ;
+}
+
+.purpose{
+}
+
+.highlights{
+}
+
+.typicalSolns{
+}
+
+h3{
+	margin:					0px ;
+	margin-top:				0px ;
+	padding:				0px ;
+	color:					#FFFFFF ;
+	font-style:				normal ;
+}
+
+h4{
+	color:					orange ;
+	margin:					0px ;
+	padding:				3px ;
+	font-style:				normal ;
+	font-weight:				bold ;
+	margin-bottom:				0 ;
+}
+
+
+.highlights{
+	margin:					0px ;
+	margin-top:				30px ;
+	h3{
+		color:				orange ;
+	} ;
+	.strategies{
+		color:				light-blue ;
+		background-color:		#3F3F3F ;
+		margin:				20px 20px 40px 20px ;
+		padding:			3px 10px 3px 10px ;
+		border:				1px solid #000 ;
+		border-radius:			8px ;
+		box-shadow:			3px 4px 10px rgba(255, 255, 120, 0.7) ; 
+		p{
+			margin:			3px ;
+			margin-left:		10px ;
+		} ;
+		h4{
+			color:			#DFDFDF ;
+		} ;
+	} ;
+}
+
+.typicalSolns{
+	margin:					0px ;
+	margin-top:				30px ;
+	h3{
+		color:				#FFDF6F ;
+	} ;
+	.scenarios{
+		color:				light-blue ;
+		background-color:		#3F3F3F ;
+		margin:				20px 20px 40px 20px ;
+		padding:			3px 10px 3px 10px ;
+		border:				1px solid #000 ;
+		border-radius:			8px ;
+		box-shadow:			3px 4px 10px rgba(120, 255, 120, 0.7) ; 
+		p{
+			margin:			3px ;
+			margin-left:		10px ;
+		} ;
+		h4{
+			color:			#DFDFDF ;
+		} ;
+	} ;
+	.code{
+		background-color:		#383838 ;
+		color:				white ;
+		margin:				20px ;
+		padding:			3px 10px 3px 10px ;
+		border:				1px solid #000 ;
+		pre{
+			max-width:		100% ;
+			white-space:		pre-wrap ;
+			word-break:		normal ;
+		} ;
+	} ;
+}
+
+	</style>
+</head>
+<body>
+	<div class="popup_banner">
+		<b>GUIDANCE</b> - Choosing 
+		<b>DROP</b> as Target for PREROUTING Packets Evaluated at 
+		<i>raw</i> Stage
+	</div>
+	<div class="popup_guidance">
+		<i>( Target Cell: PRE_raw_t3 - dummy content for purposes of demonstration )</i><br/><br/>
+
+		<div class="purpose">
+Core purpose, for using the DROP target in the <i>raw</i> table's PREROUTING chain, is
+<ul><li>to discard malicious or unwanted packets</li></ul> before consuming memory for connection tracking. By doing so, it limits the negative impact on CPU and Memory resources during DDoS attacks or high-traffic floods.
+		</div>
+
+		<div class="highlights">
+<h3>Core Scenarios for Early DROPing</h3>
+
+<div class="strategies">
+<h4>Extreme DDoS / SYN Floods</h4>
+<p>Stopping volumetric packet floods
+at the earliest network driver hook
+prevents the kernel state table
+from filling up with half-open
+connection entries.<p>
+</div>
+
+<div class="strategies">
+<h4>Bogon / Invalid IP Filtering</h4>
+<p>Dropping packets that arrive with
+unroutable, private, or reserved source IPs
+(e.g., RFC 1918 space on a public interface)
+before any processing occurs.<p>
+</div>
+
+<div class="strategies">
+<h4>Stateless Edge Security on High-Bandwidth Routers</h4>
+<p>Implementing high-performance line-rate
+packet drops on heavy 10GbE+ interfaces
+where state tracking overhead is too
+expensive.<p>
+</div>
+
+<div class="strategies">
+<h4>Pre-Routing Blacklisting</h4>
+<p>Discarding traffic from known
+malicious actors or active botnet
+IPs straight at the boundary
+before routing lookups or
+NAT evaluations take place.<p>
+</div>
+		</div>
+
+		<div class="typicalSolns">
+<br/>
+<h3>Methods to Address Anticipated Scenarios</h3>
+
+<div class="scenarios">
+<h4>Extreme DDoS / SYN Floods</h4>
+<p>To mitigate high-volume SYN floods, you can pair the early DROP target with the limit or hashlimit module to allow legitimate traffic while dropping abusive volumetric spikes.<br/>
+<br/>
+Sample form(s) of command:
+</p>
+<div class="code"><pre>iptables -t raw -A PREROUTING \
+	-p tcp --syn \
+	-m hashlimit \
+	--hashlimit-above 100/sec \
+	--hashlimit-burst 150 \
+	--hashlimit-mode srcip \
+	--hashlimit-name syn_flood_limit -j DROP</pre>
+</div>
+<p>
+This works because it tracks incoming <b>SYN</b> packets per source IP (srcip). If a single IP exceeds 100 SYN packets per second (with a burst 'headroom' of 150), any additional SYN packets from that IP are immediately dropped at the raw chain before they can consume limited resources.</p>
+</div>
+
+
+
+<div class="scenarios">
+<h4>Bogon / Invalid IP Filtering (WAN-facing Only)</h4>
+<p>
+Bogon IPs are addresses that should never appear on the public internet (such as private, loopback, or reserved subnets). If your server is connected to a public-facing interface (not your organization's private LAN), you should drop these instantly.<br/>
+<br/>
+Sample form(s) of command:
+</p>
+<div class="code"><pre>
+# Drop private RFC 1918 networks arriving on public eth0
+iptables -t raw -A PREROUTING -i eth0 -s 10.0.0.0/8 -j DROP
+iptables -t raw -A PREROUTING -i eth0 -s 172.16.0.0/12 -j DROP
+iptables -t raw -A PREROUTING -i eth0 -s 192.168.0.0/16 -j DROP
+
+# Drop loopback spoofing and APIPA/link-local autoconfiguration
+iptables -t raw -A PREROUTING -i eth0 -s 127.0.0.0/8 -j DROP
+iptables -t raw -A PREROUTING -i eth0 -s 169.254.0.0/16 -j DROP
+
+# Drop multicast and reserved experimental spaces
+iptables -t raw -A PREROUTING -i eth0 -s 224.0.0.0/4 -j DROP
+iptables -t raw -A PREROUTING -i eth0 -s 240.0.0.0/4 -j DROP</pre>
+</div>
+<p>
+It is important to note that many of the address ranges, being blocked for WAN-originating packets, are in fact ranges which are to be expected at your computer interface if the computer is on a private LAN, in which case it is strongly inadvisable to block these, except for special circumstances.</p>
+</div>
+
+
+
+<div class="scenarios">
+<h4>Stateless Edge Security on High-Bandwidth Routers</h4>
+<p>If your high-bandwidth server or router provides a specific stateless service (like public DNS over UDP) but should absolutely never accept traffic on high-traffic ports (like standard web servers or internal database servers), you can drop that traffic statelessly, in order to avoid wasting CPU cycles.
+<br/>
+<br/>
+Sample form(s) of command:
+</p>
+<div class="code"><pre class="wrapIndent"># Statelessly drop all incoming HTTP/HTTPS traffic
+iptables -t raw -A PREROUTING -p tcp --dport 80 -j DROP
+iptables -t raw -A PREROUTING -p tcp --dport 443 -j DROP
+
+# Statelessly drop unapproved high-volume UDP ports
+#   (e.g., custom game ports or NTP reflection vectors)
+iptables -t raw -A PREROUTING -p udp --dport 123 -j DROP</pre>
+</div>
+</div>
+
+
+
+<div class="scenarios">
+<h4>Pre-Routing Blacklisting</h4>
+<p>When an external IP or subnet is actively attacking your infrastructure, scanning ports, or acting as a known botnet node, you can hard-ban them at the absolute perimeter.
+<br/>
+<br/>
+Sample form(s) of command:
+</p>
+<div class="code"><pre># Drop a specific malicious single attacker IP
+iptables -t raw -A PREROUTING -s 203.0.113.50 -j DROP
+
+# Drop an entire rogue /24 subnet or hosting provider 
+#   known for spam/attacks
+iptables -t raw -A PREROUTING -s 198.51.100.0/24 -j DROP</pre>
+</div>
+<p>Note that this is where each of <b>Whitelists</b> and <b>Blacklists</b> would be strategically managed using the <b>ipset</b> functionality of iptables.<br/>
+<br/>
+<b><span style="color: yellow">FUTURES:</span> Add expanded examples demonstrating the application of ipsets, as well as doing so without affecting active functional connections.</b>
+<br/>
+</p>
+</div>
+
+
+
+
+
+		</div>
+	</div>
+
+</body>
+</html>
