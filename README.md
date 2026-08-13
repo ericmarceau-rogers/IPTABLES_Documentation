@@ -43,3 +43,4 @@ I have deliberately constructed the web pages such that there would not be any n
 
 [2] I am debating whether to maintain an embedded-code approach, vs having JS and CSS extracted as shared code segments by all documents, to minimize the full size of the documentation set.  I am hesitant to pursue this approach because it would impose the irrevocable need for accessing via an http server which, as previously stated, I am loathe to endure.
 
+[3] The Guidance documents will eventually offer a visual attribute for various scenarios to indicate whether the individual scenarios are applicable to the personal desktop computer context or to a multi-user service host.
